@@ -63,7 +63,7 @@ The code is organized into clear functional sections:
 
 ## How to run
 
-1. Open the project in Wokwi (using the link referenced in `https://wokwi.com/projects/461170422572852225`).
+1. Open the project in Wokwi (using the link referenced in `https://wokwi.com/projects/461170422572852225`.
 2. Start the simulation.
 3. Change the HC-SR04 simulated distance value to emulate rising/falling water.
 4. Observe LED/buzzer behavior and JSON logs in the serial monitor.
