@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp1", "top": 140, "left": 10, "attrs": {} },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "hcsr1",
+      "top": 60,
+      "left": 231.7,
+      "attrs": { "distance": "23" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledG1",
+      "top": 235.3,
+      "left": 285.4,
+      "attrs": { "color": "green", "label": "LOW" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledY1",
+      "top": 295.3,
+      "left": 285.4,
+      "attrs": { "color": "yellow", "label": "MEDIUM" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledR1",
+      "top": 355.3,
+      "left": 285.4,
+      "attrs": { "color": "red", "label": "HIGH" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rG1",
+      "top": 235.3,
+      "left": 385.4,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rY1",
+      "top": 295.3,
+      "left": 385.4,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rR1",
+      "top": 355.3,
+      "left": 385.4,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buzzer1",
+      "top": 435.3,
+      "left": 285.4,
+      "attrs": { "label": "BUZZER" }
+    }
+  ],
+  "connections": [
+    [ "esp1:D5", "hcsr1:TRIG", "orange", [ "h20", "v-80", "h60" ] ],
+    [ "esp1:D18", "hcsr1:ECHO", "yellow", [ "h30", "v-100", "h50" ] ],
+    [ "esp1:5V", "hcsr1:VCC", "red", [ "h10", "v-120", "h90" ] ],
+    [ "esp1:GND.1", "hcsr1:GND", "black", [ "h15", "v-140", "h80" ] ],
+    [ "esp1:D25", "ledG1:A", "green", [ "h20", "v50" ] ],
+    [ "esp1:D26", "ledY1:A", "green", [ "h20", "v90" ] ],
+    [ "esp1:D27", "ledR1:A", "green", [ "h20", "v130" ] ],
+    [ "ledG1:C", "rG1:1", "green", [ "h0" ] ],
+    [ "ledY1:C", "rY1:1", "green", [ "h0" ] ],
+    [ "ledR1:C", "rR1:1", "green", [ "h0" ] ],
+    [ "rG1:2", "esp1:GND.2", "black", [ "h30", "v-100" ] ],
+    [ "rY1:2", "esp1:GND.2", "black", [ "h30", "v-140" ] ],
+    [ "rR1:2", "esp1:GND.2", "black", [ "h30", "v-180" ] ],
+    [ "esp1:D14", "buzzer1:1", "purple", [ "h20", "v200" ] ],
+    [ "buzzer1:2", "esp1:GND.2", "black", [ "h10", "v-20" ] ]
+  ],
+  "dependencies": {}
+}

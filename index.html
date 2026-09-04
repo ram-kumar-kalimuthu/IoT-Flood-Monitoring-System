@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flood Monitoring Dashboard</title>
+    <!-- Tailwind CSS for clean styling -->
+    <script src="https://jsdelivr.net"></script>
+    <!-- MQTT.js library to connect to the broker -->
+    <script src="https://unpkg.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="bg-slate-800 border-b border-slate-700 p-5 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold tracking-wide text-cyan-400">🌊 Flood Early Warning System</h1>
+            <div id="status-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                Connecting to Broker...
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="container mx-auto p-6 flex-grow grid grid-cols-1 md:grid-cols-3 gap-6 my-auto max-w-6xl">
+        
+        <!-- Distance Card -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+            <div>
+                <h3 class="text-sm font-medium tracking-wider text-slate-400 uppercase">Water Distance</h3>
+                <p class="text-xs text-slate-500 mt-1">Sensor to surface height</p>
+            </div>
+            <div class="my-6">
+                <span id="dash-distance" class="text-5xl font-black text-slate-300">--</span>
+                <span class="text-xl font-bold text-slate-500 ml-1">cm</span>
+            </div>
+            <div class="h-1 bg-slate-700 rounded-full overflow-hidden">
+                <div id="distance-bar" class="h-full bg-cyan-500 w-0 transition-all duration-500"></div>
+            </div>
+        </div>
+
+        <!-- Level Card -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+            <div>
+                <h3 class="text-sm font-medium tracking-wider text-slate-400 uppercase">Water Level Depth</h3>
+                <p class="text-xs text-slate-500 mt-1">Percentage full scale</p>
+            </div>
+            <div class="my-6">
+                <span id="dash-level" class="text-5xl font-black text-slate-300">--</span>
+                <span class="text-xl font-bold text-slate-500 ml-1">%</span>
+            </div>
+            <div class="h-1 bg-slate-700 rounded-full overflow-hidden">
+                <div id="level-bar" class="h-full bg-blue-500 w-0 transition-all duration-500"></div>
+            </div>
+        </div>
+
+        <!-- Risk Status Card -->
+        <div id="risk-card" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl flex flex-col justify-between transition-colors duration-500">
+            <div>
+                <h3 class="text-sm font-medium tracking-wider text-slate-400 uppercase">Current Risk Status</h3>
+                <p class="text-xs text-slate-500 mt-1">System automated assessment</p>
+            </div>
+            <div class="my-6">
+                <span id="dash-risk" class="text-4xl font-black tracking-wide text-slate-400">AWAITING</span>
+            </div>
+            <div class="text-xs text-slate-400 flex items-center justify-between">
+                <span>Last updated:</span>
+                <span id="dash-time" class="font-mono">Never</span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center text-xs text-slate-600 p-4 border-t border-slate-800">
+        Localhost MQTT Dashboard Client • Secure WebSockets Connection
+    </footer>
+
+    <!-- Core App Logic -->
+    <script>
+        // CRITICAL: Change this string to match EXACTLY the topic name in your ESP32 code!
+        const targetTopic = "flood_monitor_12345/telemetry";
+
+        // Connect to HiveMQ Public Broker via WebSocket Port 8000
+        const brokerUrl = "wss://://hivemq.com";
+        const client = mqtt.connect(brokerUrl);
+
+        const statusBadge = document.getElementById("status-badge");
+        const distText = document.getElementById("dash-distance");
+        const levelText = document.getElementById("dash-level");
+        const riskText = document.getElementById("dash-risk");
+        const timeText = document.getElementById("dash-time");
+        
+        const distBar = document.getElementById("distance-bar");
+        const levelBar = document.getElementById("level-bar");
+        const riskCard = document.getElementById("risk-card");
+
+        // Handle successful connection
+        client.on("connect", () => {
+            statusBadge.innerText = "Connected Live";
+            statusBadge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+            
+            // Subscribe to your topic
+            client.subscribe(targetTopic, (err) => {
+                if (!err) {
+                    console.log(`Successfully subscribed to topic: ${targetTopic}`);
+                }
+            });
+        });
+
+        // Handle incoming data packets
+        client.on("message", (topic, message) => {
+            if (topic === targetTopic) {
+                try {
+                    // Parse incoming ESP32 JSON payload
+                    const data = JSON.parse(message.toString());
+                    
+                    // Update Text Fields
+                    distText.innerText = data.distance.toFixed(1);
+                    levelText.innerText = data.level.toFixed(1);
+                    
+                    const riskStr = data.risk.trim().toUpperCase();
+                    riskText.innerText = riskStr;
+                    
+                    // Update timestamp counter
+                    timeText.innerText = new Date().toLocaleTimeString();
+
+                    // Update dynamic visual bars (assume max depth 100cm for layout cap)
+                    const distPercent = Math.max(0, Math.min(100, (data.distance / 100) * 100));
+                    distBar.style.width = `${distPercent}%`;
+                    levelBar.style.width = `${data.level}%`;
+
+                    // Dynamic UI Coloring based on warning alerts
+                    if (riskStr === "HIGH") {
+                        riskCard.className = "bg-red-950/40 border border-red-500/40 rounded-2xl p-6 shadow-xl flex flex-col justify-between transition-colors duration-500";
+                        riskText.className = "text-4xl font-black tracking-wide text-red-400 animate-pulse";
+                    } else if (riskStr === "MEDIUM") {
+                        riskCard.className = "bg-amber-950/40 border border-amber-500/40 rounded-2xl p-6 shadow-xl flex flex-col justify-between transition-colors duration-500";
+                        riskText.className = "text-4xl font-black tracking-wide text-amber-400";
+                    } else if (riskStr === "LOW") {
+                        riskCard.className = "bg-emerald-950/40 border border-emerald-500/40 rounded-2xl p-6 shadow-xl flex flex-col justify-between transition-colors duration-500";
+                        riskText.className = "text-4xl font-black tracking-wide text-emerald-400";
+                    } else {
+                        // Handle sensor error states gracefully
+                        riskCard.className = "bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl flex flex-col justify-between transition-colors duration-500";
+                        riskText.className = "text-4xl font-black tracking-wide text-slate-400";
+                    }
+
+                } catch (e) {
+                    console.error("Failed to parse incoming payload data message format:", e);
+                }
+            }
+        });
+
+        client.on("error", (err) => {
+            statusBadge.innerText = "Connection Error";
+            statusBadge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30";
+            console.error(err);
+        });
+    </script>
+</body>
+</html>
